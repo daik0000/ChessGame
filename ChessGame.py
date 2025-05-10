@@ -26,6 +26,7 @@ dialog_background = (220, 220, 220)
 dialog_text_color = black
 button_color = (100, 149, 237)
 button_text_color = white
+check_color = (255, 0, 0) # Mau do cho o vua bi chieu
 
 # Kich thuoc o co va vi tri ban co
 square_size = 80
@@ -72,6 +73,8 @@ possible_moves = []
 giveup = False
 player_moved = False # Bien theo doi xem nguoi choi da di trong luot nay chua
 show_start_dialog = True
+show_difficulty_choice_dialog = False # Them bien cho hop thoai chon do kho
+stockfish_level = None # Luu tru muc do kho da chon
 game_started = False
 show_game_over_dialog = False
 game_over_message = ""
@@ -90,7 +93,6 @@ history_file_path = os.path.join(history_folder, f"game_history_{timestamp}.txt"
 history_file = None
 try:
     history_file = open(history_file_path, "w", encoding="utf-8")
-    history_file.write("Move history:\n")
 except Exception as e:
     print(f"Error opening history file: {e}")
     pygame.quit()
@@ -113,6 +115,15 @@ def get_pos_from_square(square):
 # Ham ve ban co va quan co
 def draw_board_and_pieces():
     screen.fill(background)
+    checked_king_square = None
+    if board.is_check():
+        current_color = board.turn
+        for s in chess.SQUARES:
+            p = board.piece_at(s)
+            if p is not None and p.piece_type == chess.KING and p.color == current_color:
+                checked_king_square = s
+                break
+
     for row in range(8):
         for col in range(8):
             square = chess.square(col, 7 - row)
@@ -139,6 +150,10 @@ def draw_board_and_pieces():
                 piece_name = f"{'w' if piece.color == chess.WHITE else 'b'}{piece.symbol().upper()}"
                 screen.blit(pieces[piece_name], (x, y))
 
+            # Hien thi o do neu vua bi chieu
+            if square == checked_king_square:
+                pygame.draw.rect(screen, check_color, (x, y, square_size, square_size), 5) # Ve vien do
+
     # Ve o bo cuoc
     pygame.draw.rect(screen, white, give_up_rect)
     try:
@@ -147,19 +162,6 @@ def draw_board_and_pieces():
         screen.blit(give_up_image, (give_up_square_x, give_up_square_y))
     except pygame.error as e:
         print(f"Error loading giveup.png image: {e}")
-
-    # Hien thi o do neu vua bi chieu
-    if board.is_check():
-        king_square = None
-        current_color = board.turn # Lay mau cua ben dang di, vua cua ben nay can duoc kiem tra
-        for s in chess.SQUARES:
-            p = board.piece_at(s)
-            if p is not None and p.piece_type == chess.KING and p.color == current_color:
-                king_square = s
-                break
-        if king_square is not None:
-            king_pos = get_pos_from_square(king_square)
-            pygame.draw.rect(screen, (255, 0, 0), (king_pos[0], king_pos[1], square_size, square_size), 5) # Ve vien do
 
     pygame.display.flip()
 
@@ -200,6 +202,7 @@ def show_dialog(message, buttons):
 # Vong lap chinh cua tro choi Pygame
 running = True
 start_buttons = []
+difficulty_choice_buttons = []
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -211,7 +214,22 @@ while running:
                     if rect.collidepoint(pos):
                         if text == "Go":
                             show_start_dialog = False
+                            show_difficulty_choice_dialog = True
+                        break
+            elif show_difficulty_choice_dialog:
+                for rect, text in difficulty_choice_buttons:
+                    if rect.collidepoint(pos):
+                        if text == "Easy":
+                            stockfish_level = 2 # Skill Level 2 cho de
+                        elif text == "Medium":
+                            stockfish_level = 10 # Skill Level 10 cho trung binh
+                        elif text == "Hard":
+                            stockfish_level = 20 # Skill Level 20 cho kho
+                        #history_file.write(f"Level - {text}\n")
+                        if stockfish_level is not None and engine is not None:
+                            engine.configure({"Skill Level": stockfish_level})
                             game_started = True
+                            show_difficulty_choice_dialog = False
                         break
             elif show_game_over_dialog:
                 for rect, text in game_over_buttons:
@@ -219,8 +237,8 @@ while running:
                         if text == "Exit":
                             show_game_over_dialog = False
                             running = False
-                            break # Them break de thoat khoi vong lap su kien ngay lap tuc
-                if not running: # Kiem tra lai running sau khi xu ly su kien Exit
+                            break
+                if not running:
                     break
             elif show_give_up_dialog:
                 for rect, text in give_up_buttons:
@@ -234,57 +252,41 @@ while running:
                         elif text == "No":
                             show_give_up_dialog = False
                         break
-            elif game_started and not show_game_over_dialog and not show_give_up_dialog: # Chi xu ly di chuyen khi khong co hop thoai nao dang hien thi
+            elif game_started and not show_game_over_dialog and not show_give_up_dialog and board.turn == chess.WHITE: # Chi xu ly di chuyen khi khong co hop thoai nao dang hien thi va den luot nguoi choi
                 if give_up_rect.collidepoint(pos):
                     show_give_up_dialog = True
                     give_up_buttons = show_dialog("Are you sure you want to give up?", ["Yes", "No"])
-                elif board.turn == chess.WHITE:
-                    # Kiem tra van co ket thuc truoc khi xu ly nuoc di cua nguoi choi
-                    if board.is_game_over() and not show_game_over_dialog:
-                        winner = "Black" if board.turn else "White" # Turn da chuyen sang ben chien thang
-                        game_over_message = ""
-                        if board.is_checkmate():
-                            game_over_message = f"Checkmate! Winner: {winner}"
-                        elif board.is_stalemate():
-                            game_over_message = "Stalemate!"
-                        elif board.is_insufficient_material():
-                            game_over_message = "Draw by insufficient material!"
-                        elif board.is_seventyfive_moves():
-                            game_over_message = "Draw by 75-move rule!"
-                        elif board.is_fivefold_repetition():
-                            game_over_message = "Draw by fivefold repetition!"
-
-                        if game_over_message:
-                            show_game_over_dialog = True
-                            game_over_buttons = show_dialog(game_over_message, ["Exit"])
-                    else:
-                        clicked_square = get_square_from_pos(pos)
-                        if clicked_square is not None:
-                            if selected_square is None:
+                else:
+                    clicked_square = get_square_from_pos(pos)
+                    if clicked_square is not None:
+                        if selected_square is None:
+                            if board.piece_at(clicked_square) is not None and board.piece_at(clicked_square).color == chess.WHITE:
+                                selected_square = clicked_square
+                                possible_moves = [move for move in board.legal_moves if move.from_square == selected_square]
+                        else:
+                            move = chess.Move(selected_square, clicked_square)
+                            if move in possible_moves:
+                                board.push(move)
+                                if history_file:
+                                    history_file.write(f"White: {move.uci()}\n")
+                                selected_square = None
+                                possible_moves = []
+                                player_moved = True
+                                draw_board_and_pieces() # Ve lai sau khi nguoi choi di
+                            else:
                                 if board.piece_at(clicked_square) is not None and board.piece_at(clicked_square).color == chess.WHITE:
                                     selected_square = clicked_square
                                     possible_moves = [move for move in board.legal_moves if move.from_square == selected_square]
-                            else:
-                                move = chess.Move(selected_square, clicked_square)
-                                if move in possible_moves:
-                                    board.push(move)
-                                    if history_file:
-                                        history_file.write(f"White: {move.uci()}\n")
+                                else:
                                     selected_square = None
                                     possible_moves = []
-                                    player_moved = True
-                                    draw_board_and_pieces() # Ve lai sau khi nguoi choi di
-                                else:
-                                    if board.piece_at(clicked_square) is not None and board.piece_at(clicked_square).color == chess.WHITE:
-                                        selected_square = clicked_square
-                                        possible_moves = [move for move in board.legal_moves if move.from_square == selected_square]
-                                    else:
-                                        selected_square = None
-                                        possible_moves = []
 
     if show_start_dialog:
         screen.fill(background)
         start_buttons = show_dialog("Let's play with me!", ["Go"])
+    elif show_difficulty_choice_dialog:
+        screen.fill(background)
+        difficulty_choice_buttons = show_dialog("Choose difficulty:", ["Easy", "Medium", "Hard"])
     elif show_game_over_dialog:
         screen.fill(background) # Dam bao ve lai background de che cac thanh phan khac
         show_dialog(game_over_message, ["Exit"]) # Chi ve hop thoai ket qua
@@ -313,6 +315,7 @@ while running:
 
         # Kiem tra ket thuc van co sau luot di cua Stockfish (da co)
         if game_started and board.is_game_over() and not show_game_over_dialog and not show_give_up_dialog:
+            pygame.time.delay(1000)
             winner = "Black" if board.turn else "White"
             game_over_message = ""
             if board.is_checkmate():
@@ -323,9 +326,9 @@ while running:
                 game_over_message = "Draw by insufficient material!"
             elif board.is_seventyfive_moves():
                 game_over_message = "Draw by 75-move rule!"
-            elif board.is_fivefold_repetition():
+            elif board.is_fivefold_repetition:
                 game_over_message = "Draw by fivefold repetition!"
-
+            history_file.write(f"{game_over_message}\n")
             if game_over_message:
                 show_game_over_dialog = True
                 game_over_buttons = show_dialog(game_over_message, ["Exit"])
