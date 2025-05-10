@@ -57,6 +57,15 @@ for name in piece_names:
         pygame.quit()
         exit()
 
+# Tai va resize hinh anh background
+try:
+    background_image = pygame.image.load("images/start_background.png").convert() # Thay "start_background.png" bằng tên file ảnh của bạn
+    background_image = pygame.transform.scale(background_image, (screen_width, screen_height))
+except pygame.error as e:
+    print(f"Error loading background image: {e}")
+    pygame.quit()
+    exit()
+
 # Khoi tao ban co va engine Stockfish
 STOCKFISH_PATH = "stockfish/stockfish.exe"  # Dam bao duong dan chinh xac
 engine = None
@@ -324,8 +333,7 @@ while running:
                         if text == "Easy":
                             stockfish_level = 2 # Skill Level 2 cho de
                         elif text == "Medium":
-                            stockfish_level = 10 # Skill Level 10 cho trung binh
-                        elif text == "Hard":
+                            stockfish_level = 10 # Skill Level 10 cho trung binhelif text == "Hard":
                             stockfish_level = 20 # Skill Level 20 cho kho
                         if stockfish_level is not None and engine is not None:
                             engine.configure({"Skill Level": stockfish_level})
@@ -334,7 +342,8 @@ while running:
                             if user_color == chess.BLACK:
                                 # Máy đi trước nếu người chơi chọn đen
                                 try:
-                                    result = engine.analyse(board, chess.engine.Limit(time=1))
+                                    result = engine.analyse(
+                                        board, chess.engine.Limit(time=1))
                                     best_move = result["pv"][0]
                                     print(f"Stockfish (White) moves first: {best_move.uci()}")
                                     board.push(best_move)
@@ -404,7 +413,7 @@ while running:
                                         possible_moves = []
 
     if show_start_dialog:
-        screen.fill(background)
+        screen.blit(background_image, (0, 0)) # Ve hinh anh background
         start_buttons = show_dialog("Let's play with me!", ["Go"])
     elif show_color_choice_dialog:
         screen.fill(background)
