@@ -101,6 +101,26 @@ except Exception as e:
     pygame.quit()
     exit()
 
+# Ham chuyen doi toa do Pygame sang ky hieu o co vua (dieu chinh cho vi tri ban co)
+def get_square_from_pos(pos):
+    col_pygame = (pos[0] - board_x) // square_size
+    row_pygame = (pos[1] - board_y) // square_size
+    if 0 <= col_pygame < 8 and 0 <= row_pygame < 8:
+        # Đảo ngược hàng và cột nếu người chơi chọn đen
+        board_col = col_pygame if user_color == chess.WHITE else 7 - col_pygame
+        board_row = 7 - row_pygame if user_color == chess.WHITE else row_pygame
+        return chess.square(board_col, board_row)
+    return None
+
+# Ham chuyen doi ky hieu o co vua sang toa do Pygame (dieu chinh cho vi tri ban co)
+def get_pos_from_square(square):
+    col = chess.square_file(square)
+    row = chess.square_rank(square)
+    # Đảo ngược hàng và cột nếu người chơi chọn đen
+    draw_col = col if user_color == chess.WHITE else 7 - col
+    draw_row = 7 - row if user_color == chess.WHITE else row
+    return (board_x + draw_col * square_size, board_y + draw_row * square_size)
+
 # Ham ve ban co va quan co
 def draw_board_and_pieces():
     screen.fill(background)
@@ -157,26 +177,6 @@ def draw_board_and_pieces():
         print(f"Error loading giveup.png image: {e}")
 
     pygame.display.flip()
-
-# Ham chuyen doi ky hieu o co vua sang toa do Pygame (dieu chinh cho vi tri ban co)
-def get_pos_from_square(square):
-    col = chess.square_file(square)
-    row = chess.square_rank(square)
-    # Đảo ngược hàng và cột nếu người chơi chọn đen
-    draw_col = col if user_color == chess.WHITE else 7 - col
-    draw_row = 7 - row if user_color == chess.WHITE else row
-    return (board_x + draw_col * square_size, board_y + draw_row * square_size)
-
-# Ham chuyen doi toa do Pygame sang ky hieu o co vua (dieu chinh cho vi tri ban co)
-def get_square_from_pos(pos):
-    col_pygame = (pos[0] - board_x) // square_size
-    row_pygame = (pos[1] - board_y) // square_size
-    if 0 <= col_pygame < 8 and 0 <= row_pygame < 8:
-        # Đảo ngược hàng và cột nếu người chơi chọn đen
-        board_col = col_pygame if user_color == chess.WHITE else 7 - col_pygame
-        board_row = 7 - row_pygame if user_color == chess.WHITE else row_pygame
-        return chess.square(board_col, board_row)
-    return None
 
 def show_dialog(message, buttons):
     dialog_width = 300
@@ -246,6 +246,46 @@ def show_color_choice(message, buttons):
     pygame.display.flip()
     return button_rects
 
+def reset_game():
+    global board, selected_square, possible_moves, giveup, player_moved
+    global show_start_dialog, show_color_choice_dialog, show_difficulty_choice_dialog
+    global stockfish_level, user_color, bot_color, game_started, show_game_over_dialog
+    global game_over_message, game_over_buttons, show_give_up_dialog, give_up_buttons
+    global history_file
+
+    board = chess.Board()
+    selected_square = None
+    possible_moves = []
+    giveup = False
+    player_moved = False
+    show_start_dialog = True
+    show_color_choice_dialog = False
+    show_difficulty_choice_dialog = False
+    stockfish_level = None
+    user_color = None
+    bot_color = None
+    game_started = False
+    show_game_over_dialog = False
+    game_over_message = ""
+    game_over_buttons = []
+    show_give_up_dialog = False
+    give_up_buttons = []
+
+    # Đóng file lịch sử cũ nếu có
+    if history_file:
+        history_file.close()
+
+    # Tạo file lịch sử mới
+    global history_file_path, timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    history_file_path = os.path.join(history_folder, f"game_history_{timestamp}.txt")
+    try:
+        history_file = open(history_file_path, "w", encoding="utf-8")
+    except Exception as e:
+        print(f"Error opening history file: {e}")
+        pygame.quit()
+        exit()
+
 # Vong lap chinh cua tro choi Pygame
 running = True
 start_buttons = []
@@ -287,7 +327,6 @@ while running:
                             stockfish_level = 10 # Skill Level 10 cho trung binh
                         elif text == "Hard":
                             stockfish_level = 20 # Skill Level 20 cho kho
-                        #history_file.write(f"Level - {text}\n")
                         if stockfish_level is not None and engine is not None:
                             engine.configure({"Skill Level": stockfish_level})
                             game_started = True
@@ -316,6 +355,10 @@ while running:
                             show_game_over_dialog = False
                             running = False
                             break
+                        elif text == "Retry":
+                            show_game_over_dialog = False
+                            reset_game()
+                            break
                 if not running:
                     break
             elif show_give_up_dialog:
@@ -326,7 +369,7 @@ while running:
                             show_give_up_dialog = False
                             show_game_over_dialog = True
                             game_over_message = "You gave up!"
-                            game_over_buttons = show_dialog(game_over_message, ["Exit"])
+                            game_over_buttons = show_dialog(game_over_message, ["Exit", "Retry"])
                         elif text == "No":
                             show_give_up_dialog = False
                         break
@@ -346,7 +389,8 @@ while running:
                                 move = chess.Move(selected_square, clicked_square)
                                 if move in possible_moves:
                                     board.push(move)
-                                    if history_file:history_file.write(f"{'Black' if user_color == chess.BLACK else 'White'}: {move.uci()}\n")
+                                    if history_file:
+                                        history_file.write(f"{'Black' if user_color == chess.BLACK else 'White'}: {move.uci()}\n")
                                     selected_square = None
                                     possible_moves = []
                                     player_moved = True
@@ -370,7 +414,7 @@ while running:
         difficulty_choice_buttons = show_dialog("Choose difficulty:", ["Easy", "Medium", "Hard"])
     elif show_game_over_dialog:
         screen.fill(background) # Dam bao ve lai background de che cac thanh phan khac
-        show_dialog(game_over_message, ["Exit"]) # Chi ve hop thoai ket qua
+        game_over_buttons = show_dialog(game_over_message, ["Exit", "Retry"]) # Them nut Retry
     elif show_give_up_dialog:
         screen.fill(background) # Dam bao ve lai background de che cac thanh phan khac
         give_up_buttons = show_dialog("Are you sure you want to give up?", ["Yes", "No"]) # Chi ve hop thoai bo cuoc
@@ -413,7 +457,7 @@ while running:
                 history_file.write(f"{game_over_message}\n")
             if game_over_message:
                 show_game_over_dialog = True
-                game_over_buttons = show_dialog(game_over_message, ["Exit"])
+                game_over_buttons = show_dialog(game_over_message, ["Exit", "Retry"]) # Them nut Retry
 
     pygame.display.flip()
 
