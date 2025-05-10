@@ -1,2 +1,0 @@
-Move history:
-You gave up! Move history saved to: history\game_history_20250510_171112.txt

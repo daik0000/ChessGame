@@ -148,6 +148,19 @@ def draw_board_and_pieces():
     except pygame.error as e:
         print(f"Error loading giveup.png image: {e}")
 
+    # Hien thi o do neu vua bi chieu
+    if board.is_check():
+        king_square = None
+        current_color = board.turn # Lay mau cua ben dang di, vua cua ben nay can duoc kiem tra
+        for s in chess.SQUARES:
+            p = board.piece_at(s)
+            if p is not None and p.piece_type == chess.KING and p.color == current_color:
+                king_square = s
+                break
+        if king_square is not None:
+            king_pos = get_pos_from_square(king_square)
+            pygame.draw.rect(screen, (255, 0, 0), (king_pos[0], king_pos[1], square_size, square_size), 5) # Ve vien do
+
     pygame.display.flip()
 
 def show_dialog(message, buttons):
@@ -287,7 +300,6 @@ while running:
             try:
                 result = engine.analyse(board, chess.engine.Limit(time=1))
                 best_move = result["pv"][0]
-                print(f"Stockfish moves: {best_move.uci()}")
                 board.push(best_move)
                 if history_file:
                     history_file.write(f"Black: {best_move.uci()}\n")
