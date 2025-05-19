@@ -1,0 +1,706 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChessGame &mdash; ChessGame  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ChessGame
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../ChessGame.html">ChessGame Module</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ChessGame</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ChessGame</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ChessGame</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Một trò chơi cờ vua đơn gian với giao diện Pygame và tích hợp engine Stockfish.</span>
+
+<span class="sd">File này chứa logic chính để khởi tạo trò chơi, xử lý tương tác người dùng, vẽ bàn cờ và quân cờ, giao tiếp với engine Stockfish để đối thủ AI đi, và quản lý các trạng thái của trò chơi như chọn quân, di chuyển, kết thúc ván.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pygame</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">chess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">chess.engine</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+
+<span class="c1"># Cai dat kich thuoc cua so</span>
+<span class="n">screen_width</span> <span class="o">=</span> <span class="mi">900</span>
+<span class="n">screen_height</span> <span class="o">=</span> <span class="mi">800</span>
+<span class="n">screen</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">set_mode</span><span class="p">((</span><span class="n">screen_width</span><span class="p">,</span> <span class="n">screen_height</span><span class="p">))</span>
+<span class="n">pygame</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">set_caption</span><span class="p">(</span><span class="s2">&quot;Chess with Stockfish&quot;</span><span class="p">)</span>
+
+<span class="c1"># Mau sac</span>
+<span class="n">white</span> <span class="o">=</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">)</span>
+<span class="n">black</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">light_square</span> <span class="o">=</span> <span class="p">(</span><span class="mi">240</span><span class="p">,</span> <span class="mi">217</span><span class="p">,</span> <span class="mi">181</span><span class="p">)</span>
+<span class="n">dark_square</span> <span class="o">=</span> <span class="p">(</span><span class="mi">181</span><span class="p">,</span> <span class="mi">136</span><span class="p">,</span> <span class="mi">99</span><span class="p">)</span>
+<span class="n">highlight_color</span> <span class="o">=</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">possible_move_color</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<span class="n">background</span> <span class="o">=</span> <span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+<span class="n">dialog_background</span> <span class="o">=</span> <span class="p">(</span><span class="mi">220</span><span class="p">,</span> <span class="mi">220</span><span class="p">,</span> <span class="mi">220</span><span class="p">)</span>
+<span class="n">dialog_text_color</span> <span class="o">=</span> <span class="n">black</span>
+<span class="n">button_color</span> <span class="o">=</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">149</span><span class="p">,</span> <span class="mi">237</span><span class="p">)</span>
+<span class="n">button_text_color</span> <span class="o">=</span> <span class="n">white</span>
+<span class="n">check_color</span> <span class="o">=</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="c1"># Mau do cho o vua bi chieu</span>
+
+<span class="c1"># Kich thuoc o co va vi tri ban co</span>
+<span class="n">square_size</span> <span class="o">=</span> <span class="mi">80</span>
+<span class="n">board_width</span> <span class="o">=</span> <span class="n">square_size</span> <span class="o">*</span> <span class="mi">8</span>
+<span class="n">board_height</span> <span class="o">=</span> <span class="n">square_size</span> <span class="o">*</span> <span class="mi">8</span>
+<span class="n">board_x</span> <span class="o">=</span> <span class="p">(</span><span class="n">screen_width</span> <span class="o">-</span> <span class="n">board_width</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+<span class="n">board_y</span> <span class="o">=</span> <span class="p">(</span><span class="n">screen_height</span> <span class="o">-</span> <span class="n">board_height</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+
+<span class="c1"># Vi tri va kich thuoc o bo cuoc</span>
+<span class="n">give_up_square_size</span> <span class="o">=</span> <span class="n">square_size</span>
+<span class="n">give_up_square_x</span> <span class="o">=</span> <span class="n">board_x</span> <span class="o">-</span> <span class="n">give_up_square_size</span> <span class="o">-</span> <span class="mi">20</span>
+<span class="n">give_up_square_y</span> <span class="o">=</span> <span class="n">board_y</span> <span class="o">+</span> <span class="n">board_height</span> <span class="o">-</span> <span class="n">give_up_square_size</span>
+<span class="n">give_up_rect</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">Rect</span><span class="p">(</span><span class="n">give_up_square_x</span><span class="p">,</span> <span class="n">give_up_square_y</span><span class="p">,</span> <span class="n">give_up_square_size</span><span class="p">,</span> <span class="n">give_up_square_size</span><span class="p">)</span>
+
+<span class="c1"># Bien luu trang thai khoi tao tai nguyen</span>
+<span class="n">_resources_initialized</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">pieces</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">background_image</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="n">font_large</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="n">font_medium</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="c1"># Khoi tao ban co va engine Stockfish (chi dinh nghia, khoi tao sau)</span>
+<span class="n">STOCKFISH_PATH</span> <span class="o">=</span> <span class="s2">&quot;stockfish</span><span class="se">\\</span><span class="s2">stockfish.exe&quot;</span>  <span class="c1"># Dam bao duong dan chinh xac</span>
+<span class="n">engine</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="n">board</span> <span class="o">=</span> <span class="n">chess</span><span class="o">.</span><span class="n">Board</span><span class="p">()</span>
+<span class="n">selected_square</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="n">possible_moves</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">giveup</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">player_moved</span> <span class="o">=</span> <span class="kc">False</span> <span class="c1"># Bien theo doi xem nguoi choi da di trong luot nay chua</span>
+<span class="n">show_start_dialog</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">show_color_choice_dialog</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">show_difficulty_choice_dialog</span> <span class="o">=</span> <span class="kc">False</span> <span class="c1"># Them bien cho hop thoai chon do kho</span>
+<span class="n">stockfish_level</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># Luu tru muc do kho da chon</span>
+<span class="n">user_color</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># Mau cua nguoi choi</span>
+<span class="n">bot_color</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># Mau cua bot</span>
+<span class="n">game_started</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">show_game_over_dialog</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">game_over_message</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+<span class="n">game_over_buttons</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">show_give_up_dialog</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">give_up_buttons</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="c1"># Tao thu muc &#39;history&#39; neu chua ton tai</span>
+<span class="n">history_folder</span> <span class="o">=</span> <span class="s2">&quot;history&quot;</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">history_folder</span><span class="p">):</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">history_folder</span><span class="p">)</span>
+
+<span class="c1"># Mo file de ghi lich su nuoc di voi encoding UTF-8 trong thu muc &#39;history&#39; (khoi tao sau)</span>
+<span class="n">history_file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">history_folder</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;game_history_</span><span class="si">{</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y%m</span><span class="si">%d</span><span class="s1">_%H%M%S&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">.txt&quot;</span><span class="p">)</span>
+<span class="n">history_file</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="init_resources">
+<a class="viewcode-back" href="../ChessGame.html#ChessGame.init_resources">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">init_resources</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Khởi tạo Pygame và tải các tài nguyên cần thiết (hình ảnh, font).&quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">_resources_initialized</span><span class="p">,</span> <span class="n">pieces</span><span class="p">,</span> <span class="n">background_image</span><span class="p">,</span> <span class="n">font_large</span><span class="p">,</span> <span class="n">font_medium</span>
+
+    <span class="k">if</span> <span class="n">_resources_initialized</span><span class="p">:</span>
+        <span class="k">return</span>
+
+    <span class="n">pygame</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+    <span class="n">pygame</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+
+    <span class="c1"># Font chu</span>
+    <span class="n">font_large</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">SysFont</span><span class="p">(</span><span class="s1">&#39;Arial&#39;</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
+    <span class="n">font_medium</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">font</span><span class="o">.</span><span class="n">SysFont</span><span class="p">(</span><span class="s1">&#39;Arial&#39;</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+
+    <span class="c1"># Tai va resize hinh anh quan co</span>
+    <span class="n">piece_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;wP&quot;</span><span class="p">,</span> <span class="s2">&quot;wR&quot;</span><span class="p">,</span> <span class="s2">&quot;wN&quot;</span><span class="p">,</span> <span class="s2">&quot;wB&quot;</span><span class="p">,</span> <span class="s2">&quot;wQ&quot;</span><span class="p">,</span> <span class="s2">&quot;wK&quot;</span><span class="p">,</span> <span class="s2">&quot;bP&quot;</span><span class="p">,</span> <span class="s2">&quot;bR&quot;</span><span class="p">,</span> <span class="s2">&quot;bN&quot;</span><span class="p">,</span> <span class="s2">&quot;bB&quot;</span><span class="p">,</span> <span class="s2">&quot;bQ&quot;</span><span class="p">,</span> <span class="s2">&quot;bK&quot;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">piece_names</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">image</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;images/</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">.png&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">convert_alpha</span><span class="p">()</span>
+            <span class="n">pieces</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">transform</span><span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="p">(</span><span class="n">square_size</span><span class="p">,</span> <span class="n">square_size</span><span class="p">))</span>
+        <span class="k">except</span> <span class="n">pygame</span><span class="o">.</span><span class="n">error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loi khi tai hinh anh </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">.png: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">pygame</span><span class="o">.</span><span class="n">quit</span><span class="p">()</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+
+    <span class="c1"># Tai va resize hinh anh background</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">background_image</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;images/start_background.png&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">convert</span><span class="p">()</span> <span class="c1"># Thay &quot;start_background.png&quot; bang ten file anh cua ban</span>
+        <span class="n">background_image</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">transform</span><span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="n">background_image</span><span class="p">,</span> <span class="p">(</span><span class="n">screen_width</span><span class="p">,</span> <span class="n">screen_height</span><span class="p">))</span>
+    <span class="k">except</span> <span class="n">pygame</span><span class="o">.</span><span class="n">error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loi khi tai hinh anh background: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">pygame</span><span class="o">.</span><span class="n">quit</span><span class="p">()</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+
+    <span class="n">_resources_initialized</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="init_engine_and_history">
+<a class="viewcode-back" href="../ChessGame.html#ChessGame.init_engine_and_history">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">init_engine_and_history</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Khởi tạo engine Stockfish và mở file lịch sử.&quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">engine</span><span class="p">,</span> <span class="n">history_file</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">engine</span> <span class="o">=</span> <span class="n">chess</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">SimpleEngine</span><span class="o">.</span><span class="n">popen_uci</span><span class="p">(</span><span class="n">STOCKFISH_PATH</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Khong tim thay Stockfish tai duong dan: </span><span class="si">{</span><span class="n">STOCKFISH_PATH</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">pygame</span><span class="o">.</span><span class="n">quit</span><span class="p">()</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">history_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">history_file_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loi khi mo file lich su: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">pygame</span><span class="o">.</span><span class="n">quit</span><span class="p">()</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span></div>
+
+
+<span class="c1"># Ham chuyen doi toa do Pygame sang ky hieu o co vua (dieu chinh cho vi tri ban co)</span>
+<div class="viewcode-block" id="get_square_from_pos">
+<a class="viewcode-back" href="../ChessGame.html#ChessGame.get_square_from_pos">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_square_from_pos</span><span class="p">(</span><span class="n">pos</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Chuyển đổi tọa độ Pygame (x, y) thành ký hiệu ô cờ vua.</span>
+
+<span class="sd">    Hàm này nhận một tuple (x, y) là tọa độ chuột trên màn hình Pygame</span>
+<span class="sd">    và trả về ký hiệu ô cờ vua tương ứng (ví dụ: &#39;a1&#39;, &#39;h8&#39;). Nó cũng</span>
+<span class="sd">    xử lý trường hợp bàn cờ bị xoay nếu người chơi chọn màu đen.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pos (tuple): Tuple (x, y) chứa tọa độ chuột trên màn hình.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str or None: Ký hiệu ô cờ vua (ví dụ: &#39;a1&#39;) nếu tọa độ nằm trong bàn cờ,</span>
+<span class="sd">                    ngược lại trả về None.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">col_pygame</span> <span class="o">=</span> <span class="p">(</span><span class="n">pos</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">board_x</span><span class="p">)</span> <span class="o">//</span> <span class="n">square_size</span>
+    <span class="n">row_pygame</span> <span class="o">=</span> <span class="p">(</span><span class="n">pos</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">board_y</span><span class="p">)</span> <span class="o">//</span> <span class="n">square_size</span>
+    <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">col_pygame</span> <span class="o">&lt;</span> <span class="mi">8</span> <span class="ow">and</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">row_pygame</span> <span class="o">&lt;</span> <span class="mi">8</span><span class="p">:</span>
+        <span class="c1"># Dao nguoc hang va cot neu nguoi choi chon den</span>
+        <span class="n">board_col</span> <span class="o">=</span> <span class="n">col_pygame</span> <span class="k">if</span> <span class="n">user_color</span> <span class="o">==</span> <span class="n">chess</span><span class="o">.</span><span class="n">WHITE</span> <span class="k">else</span> <span class="mi">7</span> <span class="o">-</span> <span class="n">col_pygame</span>
+        <span class="n">board_row</span> <span class="o">=</span> <span class="mi">7</span> <span class="o">-</span> <span class="n">row_pygame</span> <span class="k">if</span> <span class="n">user_color</span> <span class="o">==</span> <span class="n">chess</span><span class="o">.</span><span class="n">WHITE</span> <span class="k">else</span> <span class="n">row_pygame</span>
+        <span class="k">return</span> <span class="n">chess</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">board_col</span><span class="p">,</span> <span class="n">board_row</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<span class="c1"># Ham chuyen doi ky hieu o co vua sang toa do Pygame (dieu chinh cho vi tri ban co)</span>
+<div class="viewcode-block" id="get_pos_from_square">
+<a class="viewcode-back" href="../ChessGame.html#ChessGame.get_pos_from_square">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_pos_from_square</span><span class="p">(</span><span class="n">square</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Chuyển đổi ký hiệu ô cờ vua thành tọa độ Pygame (x, y).</span>
+
+<span class="sd">    Hàm này nhận một ký hiệu ô cờ vua (ví dụ: &#39;a1&#39;) và trả về</span>
+<span class="sd">    tuple (x, y) là tọa độ góc trên bên trái của ô đó trên màn hình Pygame.</span>
+<span class="sd">    Nó cũng xử lý trường hợp bàn cờ bị xoay nếu người chơi chọn màu đen.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        square (chess.Square): Ký hiệu ô cờ vua.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple: Tuple (x, y) chứa tọa độ Pygame của ô cờ.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">col</span> <span class="o">=</span> <span class="n">chess</span><span class="o">.</span><span class="n">square_file</span><span class="p">(</span><span class="n">square</span><span class="p">)</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="n">chess</span><span class="o">.</span><span class="n">square_rank</span><span class="p">(</span><span class="n">square</span><span class="p">)</span>
+    <span class="c1"># Dao nguoc hang va cot neu nguoi choi chon den</span>
+    <span class="n">draw_col</span> <span class="o">=</span> <span class="n">col</span> <span class="k">if</span> <span class="n">user_color</span> <span class="o">==</span> <span class="n">chess</span><span class="o">.</span><span class="n">WHITE</span> <span class="k">else</span> <span class="mi">7</span> <span class="o">-</span> <span class="n">col</span>
+    <span class="n">draw_row</span> <span class="o">=</span> <span class="mi">7</span> <span class="o">-</span> <span class="n">row</span> <span class="k">if</span> <span class="n">user_color</span> <span class="o">==</span> <span class="n">chess</span><span class="o">.</span><span class="n">WHITE</span> <span class="k">else</span> <span class="n">row</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">board_x</span> <span class="o">+</span> <span class="n">draw_col</span> <span class="o">*</span> <span class="n">square_size</span><span class="p">,</span> <span class="n">board_y</span> <span class="o">+</span> <span class="n">draw_row</span> <span class="o">*</span> <span class="n">square_size</span><span class="p">)</span></div>
+
+
+<span class="c1"># Ham ve ban co va quan co</span>
+<div class="viewcode-block" id="draw_board_and_pieces">
+<a class="viewcode-back" href="../ChessGame.html#ChessGame.draw_board_and_pieces">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">draw_board_and_pieces</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Vẽ bàn cờ, các quân cờ và các hiệu ứng đặc biệt lên màn hình.</span>
+
+<span class="sd">    Hàm này vẽ các ô vuông của bàn cờ với màu sắc xen kẽ,</span>
+<span class="sd">    highlight ô được chọn, hiển thị các nước đi khả thi và vẽ các quân cờ</span>
+<span class="sd">    ở vị trí hiện tại trên bàn cờ. Nó cũng đánh dấu ô vua đang bị chiếu.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">init_resources</span><span class="p">()</span>
+    <span class="n">screen</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">background</span><span class="p">)</span>
+    <span class="n">checked_king_square</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">board</span><span class="o">.</span><span class="n">is_check</span><span class="p">():</span>
+        <span class="n">current_color</span> <span class="o">=</span> <span class="n">board</span><span class="o">.</span><span class="n">turn</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">chess</span><span class="o">.</span><span class="n">SQUARES</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">board</span><span class="o">.</span><span class="n">piece_at</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">piece_type</span> <span class="o">==</span> <span class="n">chess</span><span class="o">.</span><span class="n">KING</span> <span class="ow">and</span> <span class="n">p</span><span class="o">.</span><span class="n">color</span> <span class="o">==</span> <span class="n">current_color</span><span class="p">:</span>
+                <span class="n">checked_king_square</span> <span class="o">=</span> <span class="n">s</span>
+                <span class="k">break</span>
+
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">):</span>
+            <span class="c1"># Dieu chinh thu tu row va col neu nguoi choi chon den</span>
+            <span class="n">draw_row</span> <span class="o">=</span> <span class="n">row</span> <span class="k">if</span> <span class="n">user_color</span> <span class="o">==</span> <span class="n">chess</span><span class="o">.</span><span class="n">WHITE</span> <span class="k">else</span> <span class="mi">7</span> <span class="o">-</span> <span class="n">row</span>
+            <span class="n">draw_col</span> <span class="o">=</span> <span class="n">col</span> <span class="k">if</span> <span class="n">user_color</span> <span class="o">==</span> <span class="n">chess</span><span class="o">.</span><span class="n">WHITE</span> <span class="k">else</span> <span class="mi">7</span> <span class="o">-</span> <span class="n">col</span>
+            <span class="n">square</span> <span class="o">=</span> <span class="n">chess</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">draw_col</span><span class="p">,</span> <span class="mi">7</span> <span class="o">-</span> <span class="n">draw_row</span><span class="p">)</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">board_x</span> <span class="o">+</span> <span class="n">col</span> <span class="o">*</span> <span class="n">square_size</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">board_y</span> <span class="o">+</span> <span class="n">row</span> <span class="o">*</span> <span class="n">square_size</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="n">light_square</span> <span class="k">if</span> <span class="p">(</span><span class="n">row</span> <span class="o">+</span> <span class="n">col</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">dark_square</span>
+            <span class="n">pygame</span><span class="o">.</span><span class="n">draw</span><span class="o">.</span><span class="n">rect</span><span class="p">(</span><span class="n">screen</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">square_size</span><span class="p">,</span> <span class="n">square_size</span><span class="p">))</span>
+
+            <span class="c1"># Highlight o duoc chon</span>
+            <span class="k">if</span> <span class="n">selected_square</span> <span class="o">==</span> <span class="n">square</span><span class="p">:</span>
+                <span class="n">pygame</span><span class="o">.</span><span class="n">draw</span><span class="o">.</span><span class="n">rect</span><span class="p">(</span><span class="n">screen</span><span class="p">,</span> <span class="n">highlight_color</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">square_size</span><span class="p">,</span> <span class="n">square_size</span><span class="p">),</span> <span class="mi">5</span><span class="p">)</span>
+
+            <span class="c1"># Highlight cac nuoc di kha thi</span>
+            <span class="k">if</span> <span class="n">selected_square</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">board</span><span class="o">.</span><span class="n">turn</span> <span class="o">==</span> <span class="n">user_color</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">move</span> <span class="ow">in</span> <span class="n">possible_moves</span><span class="p">:</span>
+                    <span class="c1"># Kiem tra va highlight dua tren ban co goc, khong phai ban co xoay</span>
+                    <span class="k">if</span> <span class="n">move</span><span class="o">.</span><span class="n">to_square</span> <span class="o">==</span> <span class="n">chess</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">col</span> <span class="k">if</span> <span class="n">user_color</span> <span class="o">==</span> <span class="n">chess</span><span class="o">.</span><span class="n">WHITE</span> <span class="k">else</span> <span class="mi">7</span> <span class="o">-</span> <span class="n">col</span><span class="p">,</span> <span class="mi">7</span> <span class="o">-</span> <span class="p">(</span><span class="n">row</span> <span class="k">if</span> <span class="n">user_color</span> <span class="o">==</span> <span class="n">chess</span><span class="o">.</span><span class="n">WHITE</span> <span class="k">else</span> <span class="mi">7</span> <span class="o">-</span> <span class="n">row</span><span class="p">)):</span>
+                        <span class="n">s</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">Surface</span><span class="p">((</span><span class="n">square_size</span><span class="p">,</span> <span class="n">square_size</span><span class="p">),</span> <span class="n">pygame</span><span class="o">.</span><span class="n">SRCALPHA</span><span class="p">)</span>
+                        <span class="n">s</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">possible_move_color</span><span class="p">)</span>
+                        <span class="n">screen</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">square_size</span><span class="p">,</span> <span class="n">square_size</span><span class="p">))</span>
+
+            <span class="c1"># Ve quan co</span>
+            <span class="n">piece</span> <span class="o">=</span> <span class="n">board</span><span class="o">.</span><span class="n">piece_at</span><span class="p">(</span><span class="n">square</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">piece</span><span class="p">:</span>
+                <span class="n">piece_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;w&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">piece</span><span class="o">.</span><span class="n">color</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">chess</span><span class="o">.</span><span class="n">WHITE</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;b&#39;</span><span class="si">}{</span><span class="n">piece</span><span class="o">.</span><span class="n">symbol</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="n">screen</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="n">pieces</span><span class="p">[</span><span class="n">piece_name</span><span class="p">],</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>
+
+            <span class="c1"># Hien thi o do neu vua bi chieu</span>
+            <span class="k">if</span> <span class="n">square</span> <span class="o">==</span> <span class="n">checked_king_square</span><span class="p">:</span>
+                <span class="n">pygame</span><span class="o">.</span><span class="n">draw</span><span class="o">.</span><span class="n">rect</span><span class="p">(</span><span class="n">screen</span><span class="p">,</span> <span class="n">check_color</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">square_size</span><span class="p">,</span> <span class="n">square_size</span><span class="p">),</span> <span class="mi">5</span><span class="p">)</span> <span class="c1"># Ve vien do</span>
+
+    <span class="c1"># Ve o bo cuoc (vi tri khong doi)</span>
+    <span class="n">pygame</span><span class="o">.</span><span class="n">draw</span><span class="o">.</span><span class="n">rect</span><span class="p">(</span><span class="n">screen</span><span class="p">,</span> <span class="n">white</span><span class="p">,</span> <span class="n">give_up_rect</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">give_up_image</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;images/giveup.png&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">convert_alpha</span><span class="p">()</span>
+        <span class="n">give_up_image</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">transform</span><span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="n">give_up_image</span><span class="p">,</span> <span class="p">(</span><span class="n">give_up_square_size</span><span class="p">,</span> <span class="n">give_up_square_size</span><span class="p">))</span>
+        <span class="n">screen</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="n">give_up_image</span><span class="p">,</span> <span class="p">(</span><span class="n">give_up_square_x</span><span class="p">,</span> <span class="n">give_up_square_y</span><span class="p">))</span>
+    <span class="k">except</span> <span class="n">pygame</span><span class="o">.</span><span class="n">error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loi khi tai hinh anh giveup.png: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">pygame</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">flip</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="show_dialog">
+<a class="viewcode-back" href="../ChessGame.html#ChessGame.show_dialog">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">show_dialog</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">buttons</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Hiển thị một hộp thoại đơn giản với thông báo và các nút tùy chọn.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        message (str): Nội dung thông báo hiển thị trong hộp thoại.</span>
+<span class="sd">        buttons (list): Danh sách các chuỗi văn bản hiển thị trên các nút.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list: Danh sách các tuple, mỗi tuple chứa một đối tượng pygame.Rect</span>
+<span class="sd">              và văn bản tương ứng của nút.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">init_resources</span><span class="p">()</span>
+    <span class="n">dialog_width</span> <span class="o">=</span> <span class="mi">300</span>
+    <span class="n">dialog_height</span> <span class="o">=</span> <span class="mi">150</span>
+    <span class="n">dialog_x</span> <span class="o">=</span> <span class="p">(</span><span class="n">screen_width</span> <span class="o">-</span> <span class="n">dialog_width</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+    <span class="n">dialog_y</span> <span class="o">=</span> <span class="p">(</span><span class="n">screen_height</span> <span class="o">-</span> <span class="n">dialog_height</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+    <span class="n">dialog_rect</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">Rect</span><span class="p">(</span><span class="n">dialog_x</span><span class="p">,</span> <span class="n">dialog_y</span><span class="p">,</span> <span class="n">dialog_width</span><span class="p">,</span> <span class="n">dialog_height</span><span class="p">)</span>
+
+    <span class="n">pygame</span><span class="o">.</span><span class="n">draw</span><span class="o">.</span><span class="n">rect</span><span class="p">(</span><span class="n">screen</span><span class="p">,</span> <span class="n">dialog_background</span><span class="p">,</span> <span class="n">dialog_rect</span><span class="p">)</span>
+    <span class="n">pygame</span><span class="o">.</span><span class="n">draw</span><span class="o">.</span><span class="n">rect</span><span class="p">(</span><span class="n">screen</span><span class="p">,</span> <span class="n">black</span><span class="p">,</span> <span class="n">dialog_rect</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">font_message</span> <span class="o">=</span> <span class="n">font_medium</span>
+    <span class="n">text_surface</span> <span class="o">=</span> <span class="n">font_message</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">dialog_text_color</span><span class="p">)</span>
+    <span class="n">text_rect</span> <span class="o">=</span> <span class="n">text_surface</span><span class="o">.</span><span class="n">get_rect</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">(</span><span class="n">dialog_x</span> <span class="o">+</span> <span class="n">dialog_width</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="n">dialog_y</span> <span class="o">+</span> <span class="mi">40</span><span class="p">))</span>
+    <span class="n">screen</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="n">text_surface</span><span class="p">,</span> <span class="n">text_rect</span><span class="p">)</span>
+
+    <span class="n">button_rects</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">button_width</span> <span class="o">=</span> <span class="mi">80</span>
+    <span class="n">button_height</span> <span class="o">=</span> <span class="mi">30</span>
+    <span class="n">button_spacing</span> <span class="o">=</span> <span class="mi">20</span>
+    <span class="n">start_x</span> <span class="o">=</span> <span class="n">dialog_x</span> <span class="o">+</span> <span class="p">(</span><span class="n">dialog_width</span> <span class="o">-</span> <span class="p">(</span><span class="n">button_width</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">buttons</span><span class="p">)</span> <span class="o">+</span> <span class="n">button_spacing</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">buttons</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)))</span> <span class="o">//</span> <span class="mi">2</span>
+    <span class="n">y_button</span> <span class="o">=</span> <span class="n">dialog_y</span> <span class="o">+</span> <span class="mi">90</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">button_text</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">buttons</span><span class="p">):</span>
+        <span class="n">button_x</span> <span class="o">=</span> <span class="n">start_x</span> <span class="o">+</span> <span class="n">i</span> <span class="o">*</span> <span class="p">(</span><span class="n">button_width</span> <span class="o">+</span> <span class="n">button_spacing</span><span class="p">)</span>
+        <span class="n">button_rect</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">Rect</span><span class="p">(</span><span class="n">button_x</span><span class="p">,</span> <span class="n">y_button</span><span class="p">,</span> <span class="n">button_width</span><span class="p">,</span> <span class="n">button_height</span><span class="p">)</span>
+        <span class="n">pygame</span><span class="o">.</span><span class="n">draw</span><span class="o">.</span><span class="n">rect</span><span class="p">(</span><span class="n">screen</span><span class="p">,</span> <span class="n">button_color</span><span class="p">,</span> <span class="n">button_rect</span><span class="p">)</span>
+        <span class="n">text_surface</span> <span class="o">=</span> <span class="n">font_medium</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">button_text</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">button_text_color</span><span class="p">)</span>
+        <span class="n">text_rect</span> <span class="o">=</span> <span class="n">text_surface</span><span class="o">.</span><span class="n">get_rect</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="n">button_rect</span><span class="o">.</span><span class="n">center</span><span class="p">)</span>
+        <span class="n">screen</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="n">text_surface</span><span class="p">,</span> <span class="n">text_rect</span><span class="p">)</span>
+        <span class="n">button_rects</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">button_rect</span><span class="p">,</span> <span class="n">button_text</span><span class="p">))</span>
+
+    <span class="n">pygame</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">flip</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">button_rects</span></div>
+
+
+<div class="viewcode-block" id="show_color_choice">
+<a class="viewcode-back" href="../ChessGame.html#ChessGame.show_color_choice">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">show_color_choice</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">buttons</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Hiển thị hộp thoại lựa chọn màu cho người chơi.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        message (str): Nội dung thông báo hiển thị trong hộp thoại.</span>
+<span class="sd">        buttons (list): Danh sách các chuỗi văn bản hiển thị trên các nút (ví dụ: [&quot;White&quot;, &quot;Black&quot;]).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list: Danh sách các tuple, mỗi tuple chứa một đối tượng pygame.Rect</span>
+<span class="sd">              và văn bản tương ứng của nút.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">init_resources</span><span class="p">()</span>
+    <span class="n">dialog_width</span> <span class="o">=</span> <span class="mi">300</span>
+    <span class="n">dialog_height</span> <span class="o">=</span> <span class="mi">150</span>
+    <span class="n">dialog_x</span> <span class="o">=</span> <span class="p">(</span><span class="n">screen_width</span> <span class="o">-</span> <span class="n">dialog_width</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+    <span class="n">dialog_y</span> <span class="o">=</span> <span class="p">(</span><span class="n">screen_height</span> <span class="o">-</span> <span class="n">dialog_height</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+    <span class="n">dialog_rect</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">Rect</span><span class="p">(</span><span class="n">dialog_x</span><span class="p">,</span> <span class="n">dialog_y</span><span class="p">,</span> <span class="n">dialog_width</span><span class="p">,</span> <span class="n">dialog_height</span><span class="p">)</span>
+
+    <span class="n">pygame</span><span class="o">.</span><span class="n">draw</span><span class="o">.</span><span class="n">rect</span><span class="p">(</span><span class="n">screen</span><span class="p">,</span> <span class="n">dialog_background</span><span class="p">,</span> <span class="n">dialog_rect</span><span class="p">)</span>
+    <span class="n">pygame</span><span class="o">.</span><span class="n">draw</span><span class="o">.</span><span class="n">rect</span><span class="p">(</span><span class="n">screen</span><span class="p">,</span> <span class="n">black</span><span class="p">,</span> <span class="n">dialog_rect</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">font_message</span> <span class="o">=</span> <span class="n">font_medium</span>
+    <span class="n">text_surface</span> <span class="o">=</span> <span class="n">font_message</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">dialog_text_color</span><span class="p">)</span>
+    <span class="n">text_rect</span> <span class="o">=</span> <span class="n">text_surface</span><span class="o">.</span><span class="n">get_rect</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="p">(</span><span class="n">dialog_x</span> <span class="o">+</span> <span class="n">dialog_width</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="n">dialog_y</span> <span class="o">+</span> <span class="mi">40</span><span class="p">))</span>
+    <span class="n">screen</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="n">text_surface</span><span class="p">,</span> <span class="n">text_rect</span><span class="p">)</span>
+
+    <span class="n">button_rects</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">button_width</span> <span class="o">=</span> <span class="mi">80</span>
+    <span class="n">button_height</span> <span class="o">=</span> <span class="mi">30</span>
+    <span class="n">button_spacing</span> <span class="o">=</span> <span class="mi">20</span>
+    <span class="n">start_x</span> <span class="o">=</span> <span class="n">dialog_x</span> <span class="o">+</span> <span class="p">(</span><span class="n">dialog_width</span> <span class="o">-</span> <span class="p">(</span><span class="n">button_width</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">buttons</span><span class="p">)</span><span class="o">+</span> <span class="n">button_spacing</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">buttons</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)))</span> <span class="o">//</span> <span class="mi">2</span>
+    <span class="n">y_button</span> <span class="o">=</span> <span class="n">dialog_y</span> <span class="o">+</span> <span class="mi">90</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">button_text</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">buttons</span><span class="p">):</span>
+        <span class="n">button_x</span> <span class="o">=</span> <span class="n">start_x</span> <span class="o">+</span> <span class="n">i</span> <span class="o">*</span> <span class="p">(</span><span class="n">button_width</span> <span class="o">+</span> <span class="n">button_spacing</span><span class="p">)</span>
+        <span class="n">button_rect</span><span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">Rect</span><span class="p">(</span><span class="n">button_x</span><span class="p">,</span> <span class="n">y_button</span><span class="p">,</span> <span class="n">button_width</span><span class="p">,</span> <span class="n">button_height</span><span class="p">)</span>
+        <span class="n">pygame</span><span class="o">.</span><span class="n">draw</span><span class="o">.</span><span class="n">rect</span><span class="p">(</span><span class="n">screen</span><span class="p">,</span> <span class="n">button_color</span><span class="p">,</span> <span class="n">button_rect</span><span class="p">)</span>
+        <span class="n">text_surface</span> <span class="o">=</span> <span class="n">font_medium</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">button_text</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">button_text_color</span><span class="p">)</span>
+        <span class="n">text_rect</span> <span class="o">=</span> <span class="n">text_surface</span><span class="o">.</span><span class="n">get_rect</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="n">button_rect</span><span class="o">.</span><span class="n">center</span><span class="p">)</span>
+        <span class="n">screen</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="n">text_surface</span><span class="p">,</span> <span class="n">text_rect</span><span class="p">)</span>
+        <span class="n">button_rects</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">button_rect</span><span class="p">,</span> <span class="n">button_text</span><span class="p">))</span>
+
+    <span class="n">pygame</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">flip</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">button_rects</span></div>
+
+
+<div class="viewcode-block" id="reset_game">
+<a class="viewcode-back" href="../ChessGame.html#ChessGame.reset_game">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">reset_game</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Khởi tạo lại trạng thái trò chơi về ban đầu.</span>
+
+<span class="sd">    Hàm này đặt lại bàn cờ, các biến trạng thái liên quan đến trò chơi,</span>
+<span class="sd">    đóng file lịch sử hiện tại và tạo một file lịch sử mới.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">board</span><span class="p">,</span> <span class="n">selected_square</span><span class="p">,</span> <span class="n">possible_moves</span><span class="p">,</span> <span class="n">giveup</span><span class="p">,</span> <span class="n">player_moved</span>
+    <span class="k">global</span> <span class="n">show_start_dialog</span><span class="p">,</span> <span class="n">show_color_choice_dialog</span><span class="p">,</span> <span class="n">show_difficulty_choice_dialog</span>
+    <span class="k">global</span> <span class="n">stockfish_level</span><span class="p">,</span> <span class="n">user_color</span><span class="p">,</span> <span class="n">bot_color</span><span class="p">,</span> <span class="n">game_started</span><span class="p">,</span> <span class="n">show_game_over_dialog</span>
+    <span class="k">global</span> <span class="n">game_over_message</span><span class="p">,</span> <span class="n">game_over_buttons</span><span class="p">,</span> <span class="n">show_give_up_dialog</span><span class="p">,</span> <span class="n">give_up_buttons</span>
+    <span class="k">global</span> <span class="n">history_file</span><span class="p">,</span> <span class="n">history_file_path</span>
+
+    <span class="n">board</span> <span class="o">=</span> <span class="n">chess</span><span class="o">.</span><span class="n">Board</span><span class="p">()</span>
+    <span class="n">selected_square</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">possible_moves</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">giveup</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">player_moved</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">show_start_dialog</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">show_color_choice_dialog</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">show_difficulty_choice_dialog</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">stockfish_level</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">user_color</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">bot_color</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">game_started</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">show_game_over_dialog</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">game_over_message</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">game_over_buttons</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">show_give_up_dialog</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">give_up_buttons</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># Dong file lich su cu neu co</span>
+    <span class="k">if</span> <span class="n">history_file</span><span class="p">:</span>
+        <span class="n">history_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">history_file</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Tao file lich su moi</span>
+    <span class="n">timestamp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">_%H%M%S&quot;</span><span class="p">)</span>
+    <span class="n">history_file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">history_folder</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;game_history_</span><span class="si">{</span><span class="n">timestamp</span><span class="si">}</span><span class="s2">.txt&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">history_file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">history_file_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loi khi mo file lich su: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">pygame</span><span class="o">.</span><span class="n">quit</span><span class="p">()</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span></div>
+
+
+<span class="c1"># Khoi tao engine va file lich su khi bat dau tro choi (moved to if __name__ == &quot;__main__&quot;:)</span>
+<span class="c1"># init_engine_and_history()</span>
+
+<span class="c1"># Vong lap chinh cua tro choi Pygame</span>
+<span class="n">running</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">start_buttons</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">color_choice_buttons</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">difficulty_choice_buttons</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">init_resources</span><span class="p">()</span>
+    <span class="n">init_engine_and_history</span><span class="p">()</span>
+    <span class="k">while</span> <span class="n">running</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">pygame</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">pygame</span><span class="o">.</span><span class="n">QUIT</span><span class="p">:</span>
+                <span class="n">running</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">elif</span> <span class="n">event</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">pygame</span><span class="o">.</span><span class="n">MOUSEBUTTONDOWN</span><span class="p">:</span>
+                <span class="n">pos</span> <span class="o">=</span> <span class="n">pygame</span><span class="o">.</span><span class="n">mouse</span><span class="o">.</span><span class="n">get_pos</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">show_start_dialog</span><span class="p">:</span>
+                    <span class="n">start_buttons</span> <span class="o">=</span> <span class="n">show_dialog</span><span class="p">(</span><span class="s2">&quot;Play with me!&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;Start&quot;</span><span class="p">])</span>
+                    <span class="k">for</span> <span class="n">rect</span><span class="p">,</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">start_buttons</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">rect</span><span class="o">.</span><span class="n">collidepoint</span><span class="p">(</span><span class="n">pos</span><span class="p">):</span>
+                            <span class="k">if</span> <span class="n">text</span> <span class="o">==</span> <span class="s2">&quot;Start&quot;</span><span class="p">:</span>
+                                <span class="n">show_start_dialog</span> <span class="o">=</span> <span class="kc">False</span>
+                                <span class="n">show_color_choice_dialog</span> <span class="o">=</span> <span class="kc">True</span>
+                                <span class="k">break</span>
+                <span class="k">elif</span> <span class="n">show_color_choice_dialog</span><span class="p">:</span>
+                    <span class="n">color_choice_buttons</span> <span class="o">=</span> <span class="n">show_color_choice</span><span class="p">(</span><span class="s2">&quot;Choose your color:&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;White&quot;</span><span class="p">,</span> <span class="s2">&quot;Black&quot;</span><span class="p">])</span>
+                    <span class="k">for</span> <span class="n">rect</span><span class="p">,</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">color_choice_buttons</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">rect</span><span class="o">.</span><span class="n">collidepoint</span><span class="p">(</span><span class="n">pos</span><span class="p">):</span>
+                            <span class="k">if</span> <span class="n">text</span> <span class="o">==</span> <span class="s2">&quot;White&quot;</span><span class="p">:</span>
+                                <span class="n">user_color</span> <span class="o">=</span> <span class="n">chess</span><span class="o">.</span><span class="n">WHITE</span>
+                                <span class="n">bot_color</span> <span class="o">=</span> <span class="n">chess</span><span class="o">.</span><span class="n">BLACK</span>
+                                <span class="n">show_color_choice_dialog</span> <span class="o">=</span> <span class="kc">False</span>
+                                <span class="n">show_difficulty_choice_dialog</span> <span class="o">=</span> <span class="kc">True</span>
+                            <span class="k">elif</span> <span class="n">text</span> <span class="o">==</span> <span class="s2">&quot;Black&quot;</span><span class="p">:</span>
+                                <span class="n">user_color</span> <span class="o">=</span> <span class="n">chess</span><span class="o">.</span><span class="n">BLACK</span>
+                                <span class="n">bot_color</span> <span class="o">=</span> <span class="n">chess</span><span class="o">.</span><span class="n">WHITE</span>
+                                <span class="n">show_color_choice_dialog</span> <span class="o">=</span> <span class="kc">False</span>
+                                <span class="n">show_difficulty_choice_dialog</span> <span class="o">=</span> <span class="kc">True</span>
+                            <span class="k">break</span>
+                <span class="k">elif</span> <span class="n">show_difficulty_choice_dialog</span><span class="p">:</span>
+                    <span class="n">difficulty_choice_buttons</span> <span class="o">=</span> <span class="n">show_dialog</span><span class="p">(</span><span class="s2">&quot;Choose difficulty:&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;Easy&quot;</span><span class="p">,</span> <span class="s2">&quot;Medium&quot;</span><span class="p">,</span> <span class="s2">&quot;Hard&quot;</span><span class="p">])</span>
+                    <span class="k">for</span> <span class="n">rect</span><span class="p">,</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">difficulty_choice_buttons</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">rect</span><span class="o">.</span><span class="n">collidepoint</span><span class="p">(</span><span class="n">pos</span><span class="p">):</span>
+                            <span class="k">if</span> <span class="n">text</span> <span class="o">==</span> <span class="s2">&quot;Easy&quot;</span><span class="p">:</span>
+                                <span class="n">stockfish_level</span> <span class="o">=</span> <span class="mi">2</span> <span class="c1"># Skill Level 2 for easy</span>
+                            <span class="k">elif</span> <span class="n">text</span> <span class="o">==</span> <span class="s2">&quot;Medium&quot;</span><span class="p">:</span>
+                                <span class="n">stockfish_level</span> <span class="o">=</span> <span class="mi">10</span> <span class="c1"># Skill Level 10 for medium</span>
+                            <span class="k">elif</span> <span class="n">text</span> <span class="o">==</span> <span class="s2">&quot;Hard&quot;</span><span class="p">:</span>
+                                <span class="n">stockfish_level</span> <span class="o">=</span> <span class="mi">20</span> <span class="c1"># Skill Level 20 for hard</span>
+                            <span class="k">if</span> <span class="n">stockfish_level</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">engine</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                                <span class="n">engine</span><span class="o">.</span><span class="n">configure</span><span class="p">({</span><span class="s2">&quot;Skill Level&quot;</span><span class="p">:</span> <span class="n">stockfish_level</span><span class="p">})</span>
+                                <span class="n">game_started</span> <span class="o">=</span> <span class="kc">True</span>
+                                <span class="n">show_difficulty_choice_dialog</span> <span class="o">=</span> <span class="kc">False</span>
+                                <span class="k">if</span> <span class="n">user_color</span> <span class="o">==</span> <span class="n">chess</span><span class="o">.</span><span class="n">BLACK</span><span class="p">:</span>
+                                    <span class="c1"># Bot moves first if player chooses black</span>
+                                    <span class="k">try</span><span class="p">:</span>
+                                        <span class="n">result</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">analyse</span><span class="p">(</span>
+                                            <span class="n">board</span><span class="p">,</span> <span class="n">chess</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">Limit</span><span class="p">(</span><span class="n">time</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+                                        <span class="n">best_move</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;pv&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Stockfish (White) moves first: </span><span class="si">{</span><span class="n">best_move</span><span class="o">.</span><span class="n">uci</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                                        <span class="n">board</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">best_move</span><span class="p">)</span>
+                                        <span class="k">if</span> <span class="n">history_file</span><span class="p">:</span>
+                                            <span class="n">history_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;White (Stockfish): </span><span class="si">{</span><span class="n">best_move</span><span class="o">.</span><span class="n">uci</span><span class="p">()</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                                        <span class="n">draw_board_and_pieces</span><span class="p">()</span>
+                                        <span class="n">player_moved</span> <span class="o">=</span> <span class="kc">False</span> <span class="c1"># Reset after bot&#39;s move</span>
+                                    <span class="k">except</span> <span class="n">chess</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">EngineError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Engine error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                                        <span class="n">running</span> <span class="o">=</span> <span class="kc">False</span>
+                                    <span class="k">except</span> <span class="n">chess</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">InfoError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Engine info error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                                <span class="k">break</span>
+                <span class="k">elif</span> <span class="n">show_game_over_dialog</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">rect</span><span class="p">,</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">game_over_buttons</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">rect</span><span class="o">.</span><span class="n">collidepoint</span><span class="p">(</span><span class="n">pos</span><span class="p">):</span>
+                            <span class="k">if</span> <span class="n">text</span> <span class="o">==</span> <span class="s2">&quot;Quit&quot;</span><span class="p">:</span>
+                                <span class="n">show_game_over_dialog</span> <span class="o">=</span> <span class="kc">False</span>
+                                <span class="n">running</span> <span class="o">=</span> <span class="kc">False</span>
+                                <span class="k">break</span>
+                            <span class="k">elif</span> <span class="n">text</span> <span class="o">==</span> <span class="s2">&quot;Play Again&quot;</span><span class="p">:</span>
+                                <span class="n">show_game_over_dialog</span> <span class="o">=</span> <span class="kc">False</span>
+                                <span class="n">reset_game</span><span class="p">()</span>
+                                <span class="k">break</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">running</span><span class="p">:</span>
+                        <span class="k">break</span>
+                <span class="k">elif</span> <span class="n">show_give_up_dialog</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">rect</span><span class="p">,</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">give_up_buttons</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">rect</span><span class="o">.</span><span class="n">collidepoint</span><span class="p">(</span><span class="n">pos</span><span class="p">):</span>
+                            <span class="k">if</span> <span class="n">text</span> <span class="o">==</span> <span class="s2">&quot;Yes&quot;</span><span class="p">:</span>
+                                <span class="n">giveup</span> <span class="o">=</span> <span class="kc">True</span>
+                                <span class="n">show_give_up_dialog</span> <span class="o">=</span> <span class="kc">False</span>
+                                <span class="n">show_game_over_dialog</span> <span class="o">=</span> <span class="kc">True</span>
+                                <span class="n">game_over_message</span> <span class="o">=</span> <span class="s2">&quot;You gave up!&quot;</span>
+                                <span class="n">game_over_buttons</span> <span class="o">=</span> <span class="n">show_dialog</span><span class="p">(</span><span class="n">game_over_message</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;Quit&quot;</span><span class="p">,</span> <span class="s2">&quot;Play Again&quot;</span><span class="p">])</span>
+                            <span class="k">elif</span> <span class="n">text</span> <span class="o">==</span> <span class="s2">&quot;No&quot;</span><span class="p">:</span>
+                                <span class="n">show_give_up_dialog</span> <span class="o">=</span> <span class="kc">False</span>
+                            <span class="k">break</span>
+                <span class="k">elif</span> <span class="n">game_started</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">show_game_over_dialog</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">show_give_up_dialog</span><span class="p">:</span> <span class="c1"># Handle moves only when no dialog is shown</span>
+                    <span class="k">if</span> <span class="n">board</span><span class="o">.</span><span class="n">turn</span> <span class="o">==</span> <span class="n">user_color</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">give_up_rect</span><span class="o">.</span><span class="n">collidepoint</span><span class="p">(</span><span class="n">pos</span><span class="p">):</span>
+                            <span class="n">show_give_up_dialog</span> <span class="o">=</span> <span class="kc">True</span>
+                            <span class="n">give_up_buttons</span> <span class="o">=</span> <span class="n">show_dialog</span><span class="p">(</span><span class="s2">&quot;Are you sure you want to give up?&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;Yes&quot;</span><span class="p">,</span> <span class="s2">&quot;No&quot;</span><span class="p">])</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">clicked_square</span> <span class="o">=</span> <span class="n">get_square_from_pos</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">clicked_square</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                                <span class="k">if</span> <span class="n">selected_square</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                                    <span class="k">if</span> <span class="n">board</span><span class="o">.</span><span class="n">piece_at</span><span class="p">(</span><span class="n">clicked_square</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">board</span><span class="o">.</span><span class="n">piece_at</span><span class="p">(</span><span class="n">clicked_square</span><span class="p">)</span><span class="o">.</span><span class="n">color</span> <span class="o">==</span> <span class="n">user_color</span><span class="p">:</span>
+                                        <span class="n">selected_square</span> <span class="o">=</span> <span class="n">clicked_square</span>
+                                        <span class="n">possible_moves</span> <span class="o">=</span> <span class="p">[</span><span class="n">move</span> <span class="k">for</span> <span class="n">move</span> <span class="ow">in</span> <span class="n">board</span><span class="o">.</span><span class="n">legal_moves</span> <span class="k">if</span> <span class="n">move</span><span class="o">.</span><span class="n">from_square</span> <span class="o">==</span> <span class="n">selected_square</span><span class="p">]</span>
+                                <span class="k">else</span><span class="p">:</span>
+                                    <span class="n">move</span> <span class="o">=</span> <span class="n">chess</span><span class="o">.</span><span class="n">Move</span><span class="p">(</span><span class="n">selected_square</span><span class="p">,</span> <span class="n">clicked_square</span><span class="p">)</span>
+                                    <span class="k">if</span> <span class="n">move</span> <span class="ow">in</span> <span class="n">possible_moves</span><span class="p">:</span>
+                                        <span class="n">board</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">move</span><span class="p">)</span>
+                                        <span class="k">if</span> <span class="n">history_file</span><span class="p">:</span>
+                                            <span class="n">history_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;Black&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">user_color</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">chess</span><span class="o">.</span><span class="n">BLACK</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;White&#39;</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">move</span><span class="o">.</span><span class="n">uci</span><span class="p">()</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                                        <span class="n">selected_square</span> <span class="o">=</span> <span class="kc">None</span>
+                                        <span class="n">possible_moves</span> <span class="o">=</span> <span class="p">[]</span>
+                                        <span class="n">player_moved</span> <span class="o">=</span> <span class="kc">True</span>
+                                        <span class="n">draw_board_and_pieces</span><span class="p">()</span> <span class="c1"># Redraw after player&#39;s move</span>
+                                    <span class="k">else</span><span class="p">:</span>
+                                        <span class="k">if</span> <span class="n">board</span><span class="o">.</span><span class="n">piece_at</span><span class="p">(</span><span class="n">clicked_square</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">board</span><span class="o">.</span><span class="n">piece_at</span><span class="p">(</span><span class="n">clicked_square</span><span class="p">)</span><span class="o">.</span><span class="n">color</span> <span class="o">==</span> <span class="n">user_color</span><span class="p">:</span>
+                                            <span class="n">selected_square</span> <span class="o">=</span> <span class="n">clicked_square</span>
+                                            <span class="n">possible_moves</span> <span class="o">=</span> <span class="p">[</span><span class="n">move</span> <span class="k">for</span> <span class="n">move</span> <span class="ow">in</span> <span class="n">board</span><span class="o">.</span><span class="n">legal_moves</span> <span class="k">if</span> <span class="n">move</span><span class="o">.</span><span class="n">from_square</span> <span class="o">==</span> <span class="n">selected_square</span><span class="p">]</span>
+                                        <span class="k">else</span><span class="p">:</span>
+                                            <span class="n">selected_square</span> <span class="o">=</span> <span class="kc">None</span>
+                                            <span class="n">possible_moves</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="n">show_start_dialog</span><span class="p">:</span>
+            <span class="n">screen</span><span class="o">.</span><span class="n">blit</span><span class="p">(</span><span class="n">background_image</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span> <span class="c1"># Draw background image</span>
+            <span class="n">start_buttons</span> <span class="o">=</span> <span class="n">show_dialog</span><span class="p">(</span><span class="s2">&quot;Play with me!&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;Start&quot;</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="n">show_color_choice_dialog</span><span class="p">:</span>
+            <span class="n">screen</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">background</span><span class="p">)</span>
+            <span class="n">color_choice_buttons</span> <span class="o">=</span> <span class="n">show_color_choice</span><span class="p">(</span><span class="s2">&quot;Choose your color:&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;White&quot;</span><span class="p">,</span> <span class="s2">&quot;Black&quot;</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="n">show_difficulty_choice_dialog</span><span class="p">:</span>
+            <span class="n">screen</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">background</span><span class="p">)</span>
+            <span class="n">difficulty_choice_buttons</span> <span class="o">=</span> <span class="n">show_dialog</span><span class="p">(</span><span class="s2">&quot;Choose difficulty:&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;Easy&quot;</span><span class="p">,</span> <span class="s2">&quot;Medium&quot;</span><span class="p">,</span> <span class="s2">&quot;Hard&quot;</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="n">show_game_over_dialog</span><span class="p">:</span>
+            <span class="n">screen</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">background</span><span class="p">)</span> <span class="c1"># Ensure background is redrawn to cover other elements</span>
+            <span class="n">game_over_buttons</span> <span class="o">=</span> <span class="n">show_dialog</span><span class="p">(</span><span class="n">game_over_message</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;Quit&quot;</span><span class="p">,</span> <span class="s2">&quot;Play Again&quot;</span><span class="p">])</span> <span class="c1"># Add Play Again button</span>
+        <span class="k">elif</span> <span class="n">show_give_up_dialog</span><span class="p">:</span>
+            <span class="n">screen</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">background</span><span class="p">)</span> <span class="c1"># Ensure background is redrawn to cover other elements</span>
+            <span class="n">give_up_buttons</span> <span class="o">=</span> <span class="n">show_dialog</span><span class="p">(</span><span class="s2">&quot;Are you sure you want to give up?&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;Yes&quot;</span><span class="p">,</span> <span class="s2">&quot;No&quot;</span><span class="p">])</span> <span class="c1"># Only draw give up dialog</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">draw_board_and_pieces</span><span class="p">()</span> <span class="c1"># Draw the board when no dialog is active</span>
+
+        <span class="c1"># Stockfish&#39;s turn</span>
+        <span class="k">if</span> <span class="n">game_started</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">board</span><span class="o">.</span><span class="n">is_game_over</span><span class="p">()</span> <span class="ow">and</span> <span class="n">board</span><span class="o">.</span><span class="n">turn</span> <span class="o">==</span> <span class="n">bot_color</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">giveup</span> <span class="ow">and</span> <span class="n">running</span> <span class="ow">and</span> <span class="n">player_moved</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">show_game_over_dialog</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">show_give_up_dialog</span><span class="p">:</span>
+            <span class="n">pygame</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">delay</span><span class="p">(</span><span class="mi">500</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">analyse</span><span class="p">(</span><span class="n">board</span><span class="p">,</span> <span class="n">chess</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">Limit</span><span class="p">(</span><span class="n">time</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+                <span class="n">best_move</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;pv&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">board</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">best_move</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">history_file</span><span class="p">:</span>
+                    <span class="n">history_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;White&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">bot_color</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">chess</span><span class="o">.</span><span class="n">WHITE</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;Black&#39;</span><span class="si">}</span><span class="s2"> (Stockfish): </span><span class="si">{</span><span class="n">best_move</span><span class="o">.</span><span class="n">uci</span><span class="p">()</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">draw_board_and_pieces</span><span class="p">()</span> <span class="c1"># Redraw after Stockfish&#39;s move</span>
+            <span class="k">except</span> <span class="n">chess</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">EngineError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Engine error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">running</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">except</span> <span class="n">chess</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">InfoError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Engine info error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">player_moved</span> <span class="o">=</span> <span class="kc">False</span> <span class="c1"># Reset flag after Stockfish&#39;s move</span>
+
+        <span class="c1"># Check for game over</span>
+        <span class="k">if</span> <span class="n">game_started</span> <span class="ow">and</span> <span class="n">board</span><span class="o">.</span><span class="n">is_game_over</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">show_game_over_dialog</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">show_give_up_dialog</span><span class="p">:</span>
+            <span class="n">pygame</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">delay</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+            <span class="n">winner</span> <span class="o">=</span> <span class="s2">&quot;Black&quot;</span> <span class="k">if</span> <span class="n">board</span><span class="o">.</span><span class="n">turn</span> <span class="k">else</span> <span class="s2">&quot;White&quot;</span>
+            <span class="n">game_over_message</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">if</span> <span class="n">board</span><span class="o">.</span><span class="n">is_checkmate</span><span class="p">():</span>
+                <span class="n">game_over_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Checkmate! Winner: </span><span class="si">{</span><span class="n">winner</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">elif</span> <span class="n">board</span><span class="o">.</span><span class="n">is_stalemate</span><span class="p">():</span>
+                <span class="n">game_over_message</span> <span class="o">=</span> <span class="s2">&quot;Stalemate!&quot;</span>
+            <span class="k">elif</span> <span class="n">board</span><span class="o">.</span><span class="n">is_insufficient_material</span><span class="p">():</span>
+                <span class="n">game_over_message</span> <span class="o">=</span> <span class="s2">&quot;Draw due to insufficient material!&quot;</span>
+            <span class="k">elif</span> <span class="n">board</span><span class="o">.</span><span class="n">is_seventyfive_moves</span><span class="p">():</span>
+                <span class="n">game_over_message</span> <span class="o">=</span> <span class="s2">&quot;Draw by 75-move rule!&quot;</span>
+            <span class="k">elif</span> <span class="n">board</span><span class="o">.</span><span class="n">is_fivefold_repetition</span><span class="p">():</span>
+                <span class="n">game_over_message</span> <span class="o">=</span> <span class="s2">&quot;Draw by fivefold repetition!&quot;</span>
+            <span class="k">if</span> <span class="n">history_file</span><span class="p">:</span>
+                <span class="n">history_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">game_over_message</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">game_over_message</span><span class="p">:</span>
+                <span class="n">show_game_over_dialog</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">game_over_buttons</span> <span class="o">=</span> <span class="n">show_dialog</span><span class="p">(</span><span class="n">game_over_message</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;Quit&quot;</span><span class="p">,</span> <span class="s2">&quot;Play Again&quot;</span><span class="p">])</span> <span class="c1"># Add Play Again button</span>
+
+        <span class="n">pygame</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">flip</span><span class="p">()</span>
+
+    <span class="c1"># Close history file and quit Pygame</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">running</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">giveup</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">show_game_over_dialog</span> <span class="ow">and</span> <span class="n">history_file</span><span class="p">:</span>
+            <span class="n">history_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;You gave up! Game history saved to: </span><span class="si">{</span><span class="n">history_file_path</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">history_file</span><span class="p">:</span>
+            <span class="n">history_file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">engine</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">engine</span><span class="o">.</span><span class="n">quit</span><span class="p">()</span>
+        <span class="n">pygame</span><span class="o">.</span><span class="n">quit</span><span class="p">()</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">engine</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">running</span><span class="p">:</span> <span class="c1"># Ensure engine is not quit if the loop is still running</span>
+        <span class="n">engine</span><span class="o">.</span><span class="n">quit</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">running</span><span class="p">:</span>
+        <span class="n">pygame</span><span class="o">.</span><span class="n">quit</span><span class="p">()</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Your Name.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,240 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChessGame Module &mdash; ChessGame  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="ChessGame documentation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ChessGame
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ChessGame Module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ChessGame.draw_board_and_pieces"><code class="docutils literal notranslate"><span class="pre">draw_board_and_pieces()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ChessGame.get_pos_from_square"><code class="docutils literal notranslate"><span class="pre">get_pos_from_square()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ChessGame.get_square_from_pos"><code class="docutils literal notranslate"><span class="pre">get_square_from_pos()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ChessGame.init_engine_and_history"><code class="docutils literal notranslate"><span class="pre">init_engine_and_history()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ChessGame.init_resources"><code class="docutils literal notranslate"><span class="pre">init_resources()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ChessGame.reset_game"><code class="docutils literal notranslate"><span class="pre">reset_game()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ChessGame.show_color_choice"><code class="docutils literal notranslate"><span class="pre">show_color_choice()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ChessGame.show_dialog"><code class="docutils literal notranslate"><span class="pre">show_dialog()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ChessGame</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">ChessGame Module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/ChessGame.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-ChessGame">
+<span id="chessgame-module"></span><h1>ChessGame Module<a class="headerlink" href="#module-ChessGame" title="Link to this heading"></a></h1>
+<p>Một trò chơi cờ vua đơn gian với giao diện Pygame và tích hợp engine Stockfish.</p>
+<p>File này chứa logic chính để khởi tạo trò chơi, xử lý tương tác người dùng, vẽ bàn cờ và quân cờ, giao tiếp với engine Stockfish để đối thủ AI đi, và quản lý các trạng thái của trò chơi như chọn quân, di chuyển, kết thúc ván.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="ChessGame.draw_board_and_pieces">
+<span class="sig-prename descclassname"><span class="pre">ChessGame.</span></span><span class="sig-name descname"><span class="pre">draw_board_and_pieces</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ChessGame.html#draw_board_and_pieces"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ChessGame.draw_board_and_pieces" title="Link to this definition"></a></dt>
+<dd><p>Vẽ bàn cờ, các quân cờ và các hiệu ứng đặc biệt lên màn hình.</p>
+<p>Hàm này vẽ các ô vuông của bàn cờ với màu sắc xen kẽ,
+highlight ô được chọn, hiển thị các nước đi khả thi và vẽ các quân cờ
+ở vị trí hiện tại trên bàn cờ. Nó cũng đánh dấu ô vua đang bị chiếu.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ChessGame.get_pos_from_square">
+<span class="sig-prename descclassname"><span class="pre">ChessGame.</span></span><span class="sig-name descname"><span class="pre">get_pos_from_square</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">square</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ChessGame.html#get_pos_from_square"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ChessGame.get_pos_from_square" title="Link to this definition"></a></dt>
+<dd><p>Chuyển đổi ký hiệu ô cờ vua thành tọa độ Pygame (x, y).</p>
+<p>Hàm này nhận một ký hiệu ô cờ vua (ví dụ: ‘a1’) và trả về
+tuple (x, y) là tọa độ góc trên bên trái của ô đó trên màn hình Pygame.
+Nó cũng xử lý trường hợp bàn cờ bị xoay nếu người chơi chọn màu đen.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>square</strong> (<em>chess.Square</em>) – Ký hiệu ô cờ vua.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple (x, y) chứa tọa độ Pygame của ô cờ.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.13)">tuple</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ChessGame.get_square_from_pos">
+<span class="sig-prename descclassname"><span class="pre">ChessGame.</span></span><span class="sig-name descname"><span class="pre">get_square_from_pos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pos</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ChessGame.html#get_square_from_pos"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ChessGame.get_square_from_pos" title="Link to this definition"></a></dt>
+<dd><p>Chuyển đổi tọa độ Pygame (x, y) thành ký hiệu ô cờ vua.</p>
+<p>Hàm này nhận một tuple (x, y) là tọa độ chuột trên màn hình Pygame
+và trả về ký hiệu ô cờ vua tương ứng (ví dụ: ‘a1’, ‘h8’). Nó cũng
+xử lý trường hợp bàn cờ bị xoay nếu người chơi chọn màu đen.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pos</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.13)"><em>tuple</em></a>) – Tuple (x, y) chứa tọa độ chuột trên màn hình.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Ký hiệu ô cờ vua (ví dụ: ‘a1’) nếu tọa độ nằm trong bàn cờ,</dt><dd><p>ngược lại trả về None.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a> or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ChessGame.init_engine_and_history">
+<span class="sig-prename descclassname"><span class="pre">ChessGame.</span></span><span class="sig-name descname"><span class="pre">init_engine_and_history</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ChessGame.html#init_engine_and_history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ChessGame.init_engine_and_history" title="Link to this definition"></a></dt>
+<dd><p>Khởi tạo engine Stockfish và mở file lịch sử.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ChessGame.init_resources">
+<span class="sig-prename descclassname"><span class="pre">ChessGame.</span></span><span class="sig-name descname"><span class="pre">init_resources</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ChessGame.html#init_resources"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ChessGame.init_resources" title="Link to this definition"></a></dt>
+<dd><p>Khởi tạo Pygame và tải các tài nguyên cần thiết (hình ảnh, font).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ChessGame.reset_game">
+<span class="sig-prename descclassname"><span class="pre">ChessGame.</span></span><span class="sig-name descname"><span class="pre">reset_game</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ChessGame.html#reset_game"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ChessGame.reset_game" title="Link to this definition"></a></dt>
+<dd><p>Khởi tạo lại trạng thái trò chơi về ban đầu.</p>
+<p>Hàm này đặt lại bàn cờ, các biến trạng thái liên quan đến trò chơi,
+đóng file lịch sử hiện tại và tạo một file lịch sử mới.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ChessGame.show_color_choice">
+<span class="sig-prename descclassname"><span class="pre">ChessGame.</span></span><span class="sig-name descname"><span class="pre">show_color_choice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buttons</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ChessGame.html#show_color_choice"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ChessGame.show_color_choice" title="Link to this definition"></a></dt>
+<dd><p>Hiển thị hộp thoại lựa chọn màu cho người chơi.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>message</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Nội dung thông báo hiển thị trong hộp thoại.</p></li>
+<li><p><strong>buttons</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – Danh sách các chuỗi văn bản hiển thị trên các nút (ví dụ: [“White”, “Black”]).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Danh sách các tuple, mỗi tuple chứa một đối tượng pygame.Rect</dt><dd><p>và văn bản tương ứng của nút.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)">list</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ChessGame.show_dialog">
+<span class="sig-prename descclassname"><span class="pre">ChessGame.</span></span><span class="sig-name descname"><span class="pre">show_dialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buttons</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ChessGame.html#show_dialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ChessGame.show_dialog" title="Link to this definition"></a></dt>
+<dd><p>Hiển thị một hộp thoại đơn giản với thông báo và các nút tùy chọn.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>message</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Nội dung thông báo hiển thị trong hộp thoại.</p></li>
+<li><p><strong>buttons</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – Danh sách các chuỗi văn bản hiển thị trên các nút.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Danh sách các tuple, mỗi tuple chứa một đối tượng pygame.Rect</dt><dd><p>và văn bản tương ứng của nút.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)">list</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="ChessGame documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Your Name.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

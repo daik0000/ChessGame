@@ -1,0 +1,5 @@
+White: d2d4
+Black (Stockfish): g8f6
+White: e2e4
+Black (Stockfish): f6e4
+You gave up! Game history saved to: history\game_history_20250519_170246.txt

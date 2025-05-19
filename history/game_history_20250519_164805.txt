@@ -1,0 +1,7 @@
+Trang: d2d4
+Den (Stockfish): g8f6
+Trang: e2e3
+Den (Stockfish): d7d5
+Trang: f2f4
+Den (Stockfish): c8f5
+Ban da bo cuoc! Lich su van co da duoc luu vao: history\game_history_20250519_164805.txt

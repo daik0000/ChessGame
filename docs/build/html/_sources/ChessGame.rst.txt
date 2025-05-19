@@ -1,0 +1,14 @@
+ChessGame Module
+=================
+
+.. automodule:: ChessGame  
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. autofunction:: ChessGame.get_square_from_pos
+.. autofunction:: ChessGame.get_pos_from_square
+.. autofunction:: ChessGame.draw_board_and_pieces
+.. autofunction:: ChessGame.show_dialog
+.. autofunction:: ChessGame.show_color_choice
+.. autofunction:: ChessGame.reset_game

@@ -1,0 +1,2 @@
+White: d2d4
+Black (Stockfish): g8f6
